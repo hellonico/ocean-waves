@@ -1,19 +1,32 @@
 (ns waves.ui
   (:gen-class)
+  (:import [javafx.scene.image Image])
   (:require [cljfx.api :as fx]
-            [waves.core2]
+            [clojure.java.io :as io]
             [waves.core]
-            [clojure.java.io :as io])
-  (:import [javafx.scene.image Image]))
+            [waves.core2]))
 
 (def app-state
   (atom {:file-path nil
          :url "http://localhost:11434"
          :debug true
+         :output nil
          :model "llama3.2"
+         :models []
          ;:system-prompt "You are a machine translator from Japanese to English. You are given one string each time. When the string is in English you return the string as is. If the string is in Japanese, you answer with the best translation. Your answer will only contain the translation and the translation only, nothing else, no question, no explanation. If you do not know, answer with the same string as input"
          :prompt-template "You are a machine translator from Japanese to English. You are given one string each time. When the string is in English you return the string as is. If the string is in Japanese, you answer with the best translation. Your answer will only contain the translation and the translation only, nothing else, no question, no explanation. If you do not know, answer with the same string as input. Translate: %s"
          :status :idle})) ; :idle, :running, or :completed
+
+;; Fetch models from the URL
+(defn fetch-models [url on-complete]
+  (pyjama.core/ollama url :tags {}
+                      (fn [res] (on-complete (map :name (:models res))))))
+
+;; When the URL changes, refresh the model list
+(defn update-model-list [url]
+  (fetch-models url
+                (fn [models]
+                  (swap! app-state assoc :models models))))
 
 (defn file-chooser []
   (let [chooser (javafx.stage.FileChooser.)]
@@ -23,14 +36,8 @@
     (.showOpenDialog chooser nil)))
 
 (defn long-running-task []
-  ;(Thread/sleep 5000)
-  (let [input (@app-state :file-path)
-        output (waves.utils/compute-output-file-path input)
-        ]
   ;(waves.core2/prefix-text input output @app-state)
-  (waves.core/update-ppt-text input output @app-state)
-  ))
-   ; Simulates a long-running function (e.g., 5 seconds)
+  (waves.core/update-ppt-text (@app-state :file-path) (@app-state :output) @app-state))
 
 (def spinner-image
   (Image. (io/input-stream (io/resource "spinner.gif"))))
@@ -84,25 +91,37 @@
                               :on-action (fn [_]
                                            (let [file (.getAbsolutePath (file-chooser))]
                                              (when file
-                                               (swap! app-state assoc :file-path file))))}
+                                               (swap! app-state assoc :file-path file)
+                                               (swap!
+                                                 app-state assoc :output
+                                                 (waves.utils/compute-output-file-path (:file-path @app-state)))
+                                               )))}
                              {:fx/type :label :text "URL"}
                              {:fx/type :text-field
                               :text (:url state)
-                              :on-text-changed #(swap! app-state assoc :url %)}
+                              :on-text-changed #(do
+                                                  (swap! app-state assoc :url %)
+                                                  (update-model-list %))}
+                             ;{:fx/type :label :text "Model"}
+                             ;{:fx/type :text-field
+                             ; :text (:model state)
+                             ; :on-text-changed #(swap! app-state assoc :model %)}
                              {:fx/type :label :text "Model"}
-                             {:fx/type :text-field
-                              :text (:model state)
-                              :on-text-changed #(swap! app-state assoc :model %)}
-                             {:fx/type :label :text "System Prompt"}
-                             {:fx/type :text-area
-                              :wrap-text true
-                              :pref-height 100
-                              :text (:system-prompt state)
-                              :on-text-changed #(swap! app-state assoc :system-prompt %)}
+                             {:fx/type :combo-box
+                              :items (:models state)
+                              :value (:model state)
+                              :on-action #(swap! app-state assoc :model (.. % -newValue))}
+
+                             ;{:fx/type :label :text "System Prompt"}
+                             ;{:fx/type :text-area
+                             ; :wrap-text true
+                             ; :pref-height 100
+                             ; :text (:system-prompt state)
+                             ; :on-text-changed #(swap! app-state assoc :system-prompt %)}
                              {:fx/type :label :text "Prompt Template"}
                              {:fx/type :text-area
                               :wrap-text true
-                              :pref-height 100
+                              :pref-height 200
                               :text (:prompt-template state)
                               :on-text-changed #(swap! app-state assoc :prompt-template %)}
                              {:fx/type :h-box
@@ -125,27 +144,27 @@
                                                       :image spinner-image
                                                       :fit-width 24
                                                       :fit-height 24} ; Spinner
-                                            :completed {:fx/type :image-view
+                                            :completed
+                                            {:fx/type :h-box
+                                             :spacing 10
+                                             :children  [
+                                            {:fx/type :image-view
                                                         :image check-image
                                                         :fit-width 24
-                                                        :fit-height 24} ; Success
+                                                        :fit-height 24}
+                                                         {:fx/type :button
+                                                          :text "Open Output File"
+                                                          :on-action (fn [_]
+                                                                       (waves.utils/open-file (@app-state :output)))}
+                                                         ]
+                                             } ; Success
                                             :failed {:fx/type :image-view
                                                      :image failed-image
                                                      :fit-width 24
                                                      :fit-height 24})
-                                          ;{:fx/type :label
-                                          ; :text (case (:status state)
-                                          ;         :idle "Idle"
-                                          ;         :running "Running..."
-                                          ;         :completed (str "Success! Output: " (:output-file state))
-                                          ;         :failure "Task Failed.")}
-                                          ;{:fx/type :button
-                                          ; :text "Stop"
-                                          ; ;:disable (not (:is-running state))
-                                          ; :on-action (fn [_]
-                                          ;              (reset! task-stop-flag true)
-                                          ;              (swap! app-state assoc :is-running false :status :idle))}
-                                          ]}
+                                          ]
+
+                              }
 
                                           ]}}})
 
@@ -155,4 +174,5 @@
     :opts {:app-state app-state}))
 
 (defn -main [& args]
+  (update-model-list (:url @app-state))
   (fx/mount-renderer app-state renderer))

@@ -1,4 +1,5 @@
 (ns waves.utils
+  (:import [java.awt Desktop])
   (:require [clojure.java.io :as io]))
 
 (defn translate[config text]
@@ -37,3 +38,7 @@
         original-name (.getName file)
         translated-name (str "translated_" original-name)]
     (str parent-dir "/" translated-name)))
+
+(defn open-file [file-path]
+  (let [desktop (Desktop/getDesktop)]
+    (.open desktop (clojure.java.io/as-file file-path))))

@@ -21,12 +21,12 @@
                         (when (and (not (clojure.string/blank? original-text)))
                           (let [translation (waves.utils/translate options original-text)]
                             (when translation
-                              (.setText paragraph translation)))))))))))
+                              (try (.setText paragraph translation) (catch Exception e (println (.getMessage e))))))))))))))
           ;; Process other shapes (e.g., text shapes)
           (when (instance? XSLFTextShape shape)
             (let [text (.getText ^XSLFTextShape shape)]
               (when (and (not (clojure.string/blank? text)))
                 (let [translation (waves.utils/translate options text)]
                   (when translation
-                    (.setText ^XSLFTextShape shape translation))))))))
+                    (try  (.setText ^XSLFTextShape shape translation) (catch Exception e (println (.getMessage e)))))))))))
       (.write ppt output-stream))))
