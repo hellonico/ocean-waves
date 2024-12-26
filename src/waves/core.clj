@@ -1,25 +1,32 @@
 (ns waves.core
-  (:require [pyjama.core] [waves.utils])
-  (:import [org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTextShape]
-           [java.io FileInputStream FileOutputStream]))
+  (:require [pyjama.core]
+            [waves.utils])
+  (:import (java.io FileInputStream FileOutputStream)
+           (org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTable XSLFTableCell XSLFTextShape)))
 
 (defn update-ppt-text [input-path output-path options]
   (with-open [input-stream (FileInputStream. ^String input-path)
               output-stream (FileOutputStream. ^String output-path)]
     (let [ppt (XMLSlideShow. input-stream)]
       (doseq [^XSLFSlide slide (.getSlides ppt)]
-        ;(println (count (.getShapes slide)))
         (doseq [shape (.getShapes slide)]
+          ;; Process table shapes
+          (when (instance? XSLFTable shape)
+            (doseq [row (.getRows ^XSLFTable shape)]
+              (doseq [^XSLFTableCell cell (.getCells row)]
+                (let [tx-body (.getTextBody cell)] ;; Get the text body from the cell
+                  (when (some? tx-body)
+                    (doseq [paragraph (.getParagraphs tx-body)] ;; Iterate over paragraphs
+                      (let [original-text (.getText paragraph)]
+                        (when (and (not (clojure.string/blank? original-text)))
+                          (let [translation (waves.utils/translate options original-text)]
+                            (when translation
+                              (.setText paragraph translation)))))))))))
+          ;; Process other shapes (e.g., text shapes)
           (when (instance? XSLFTextShape shape)
-            (when-let [text (.getText ^XSLFTextShape shape)]
-              (if (and (not (nil? text)) (not (clojure.string/blank? text)))
+            (let [text (.getText ^XSLFTextShape shape)]
+              (when (and (not (clojure.string/blank? text)))
                 (let [translation (waves.utils/translate options text)]
-                  (if (not (nil? translation))
-                    (try
-                      (.setText ^XSLFTextShape shape translation)
-                      (catch Exception e
-                        (clojure.pprint/pprint options)
-                        (print *err* "ERROR:\n" (.getMessage e) "\n" translation)
-                        (throw (Exception. (str "ERROR:\n" (.getMessage e) "\n" translation)))))
-                      )))))))
-        (.write ppt output-stream))))
+                  (when translation
+                    (.setText ^XSLFTextShape shape translation))))))))
+      (.write ppt output-stream))))

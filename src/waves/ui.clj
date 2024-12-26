@@ -62,7 +62,7 @@
    :showing true
    :width  500
    :on-close-request (fn [_] (System/exit 0)) ; Exit when the window is closed
-   :icons [(Image. (io/input-stream (io/resource "images.png")))] ; Set the app icon
+   :icons [(Image. (io/input-stream (io/resource "delicious.png")))] ; Set the app icon
    :height 600
    :scene {:fx/type :scene
            :root {:fx/type :v-box
@@ -116,7 +116,8 @@
                                                           (try
                                                             (long-running-task) ; Simulate success
                                                             (swap! app-state assoc :status :completed)
-                                                            (catch Exception _
+                                                            (catch Exception e
+                                                              (.printStackTrace e)
                                                               (swap! app-state assoc :status :failed)))))}
                                           (case (:status state)
                                             :idle {:fx/type :region :pref-width 24 :pref-height 24} ; Empty space
