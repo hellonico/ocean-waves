@@ -153,5 +153,5 @@
     :middleware (fx/wrap-map-desc assoc :fx/type root-view)
     :opts {:app-state app-state}))
 
-(defn -main []
+(defn -main [& args]
   (fx/mount-renderer app-state renderer))
