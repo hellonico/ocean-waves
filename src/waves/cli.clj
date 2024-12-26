@@ -1,42 +1,52 @@
-(ns core
+(ns waves.cli
   (:gen-class)
   (:require [clojure.tools.cli])
-  (:require [waves.core]))
+  (:require [waves.core] [waves.core2]))
 
 (def cli-options
-  [["-i" "--input INPUT" "Input PowerPoint file (default: input.pptx)"
+  [["-h" "--help"]
+   ["-i" "--input INPUT" "Input PowerPoint file (default: input.pptx)"
     :default "input.pptx"]
    ["-o" "--output OUTPUT" "Output PowerPoint file (default: output.pptx)"
     :default "output.pptx"]
    ["-m" "--model MODEL" "Model to use (default: llama3.2)"
-    :default "qwen"]
+    :default "llama3.2"]
    ["-u" "--url URL" "Server URL (default: http://localhost:11434)"
     :default "http://localhost:11434"]
-   ["-s" "--system-prompt PROMPT" "System prompt (default: translation prompt)"
+   ["-s" "--system PROMPT" "System prompt (default: translation prompt)"
     :default "You are a machine translator from Japanese to English. You are given one string each time. When the string is in English you return the string as is. If the string is in Japanese, you answer with the best translation. Your answer will only contain the translation and the translation only, nothing else, no question, no explanation. If you do not know, answer with the same string as input"]
-   ["-p" "--prompt-template TEMPLATE" "Prompt template (default: %s)"
-    :default "%s"]
+   ["-p" "--prompt-template PROMPT-TEMPLATE" "Prompt template (default: %s)"
+    :default "Translate the following: %s"]
    ["-d" "--debug" "Enable debug mode (default: false)"
-    :default false
+    :default true
     :parse-fn #(Boolean/valueOf ^String %)]])
 
 (defn -main [& args]
   (let [{:keys [options errors summary]} (clojure.tools.cli/parse-opts args cli-options)]
-    (clojure.pprint/pprint options)
+    (cond
+      (:help options) ; help => exit OK with usage summary
+      {:exit-message (println "\nUsage:\n" summary) :ok? true}
 
-    (if (seq errors)
+      (seq errors)
       (do
         (println "Error parsing options:")
         (doseq [err errors] (println "  " err))
         (println "\nUsage:\n" summary)
         (System/exit 1))
+      :else
+      (let [{:keys [^String input ^String output] :as config} options]
+        (clojure.pprint/pprint options)
+        ;
+        ;(waves.core/update-ppt-text
+        ;  input
+        ;  output
+        ;  url
+        ;  model
+        ;  system-prompt
+        ;  prompt-template
+        ;  debug)
+        ;(waves.core/update-ppt-text input output (conj config {:stream false}))
+        (waves.core2/prefix-text input output (conj config {:stream false}))
 
-      (let [{:keys [^String input ^String output model url system-prompt prompt-template debug]} options]
-        (waves.core/update-ppt-text
-          (String. input)
-          (String. output)
-          url
-          model
-          system-prompt
-          prompt-template
-          debug)))))
+
+        ))))
