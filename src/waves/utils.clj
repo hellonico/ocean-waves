@@ -7,14 +7,9 @@
     (println ":> " text "\n"))
 
 (let [
-      ;_ (println config)
       _options (if (contains? config :prompt)
                  config
                  (conj {:prompt (format (:prompt-template config) text)} config))
-      ;_ (if (:debug config)
-      ;    (clojure.pprint/pprint _options))
-          ;(println ":> " (:prompt _options) "\n"))
-
       ; TODO: pass through
       translation (clojure.string/trim
                     (pyjama.core/ollama
@@ -23,7 +18,6 @@
                       _options
                       :response
                       ))
-      ;translation text
       ]
 
   (if (:debug config)

@@ -1,7 +1,9 @@
 (ns waves.cli
   (:gen-class)
   (:require [clojure.tools.cli])
-  (:require [waves.core] [waves.core2]))
+  (:require [waves.core]
+            ;[waves.core2]
+            ))
 
 (def cli-options
   [["-h" "--help"]
@@ -36,17 +38,7 @@
       :else
       (let [{:keys [^String input ^String output] :as config} options]
         (clojure.pprint/pprint options)
-        ;
-        ;(waves.core/update-ppt-text
-        ;  input
-        ;  output
-        ;  url
-        ;  model
-        ;  system-prompt
-        ;  prompt-template
-        ;  debug)
-        ;(waves.core/update-ppt-text input output (conj config {:stream false}))
-        (waves.core2/prefix-text input output (conj config {:stream false}))
+        (waves.core/update-ppt-text input output (conj config {:stream false}))
 
 
         ))))

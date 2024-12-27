@@ -5,7 +5,7 @@
             [clojure.java.io :as io]
             [waves.core]
             [pyjama.state]
-            [waves.core2]))
+            ))
 
 (def app-state
   (atom {:file-path nil
