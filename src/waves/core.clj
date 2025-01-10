@@ -4,9 +4,15 @@
   (:import (java.io FileInputStream FileOutputStream)
            (org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTable XSLFTableCell XSLFTextShape)))
 
-(defn update-ppt-text [input-path output-path options]
-  (with-open [input-stream (FileInputStream. ^String input-path)
+(defn update-ppt-text [ app-state ]
+  ;(swap! app-state assoc :processing true)
+
+  (with-open [input-path (@app-state :file-path)
+              output-path (@app-state :output)
+              options  @app-state
+              input-stream (FileInputStream. ^String input-path)
               output-stream (FileOutputStream. ^String output-path)]
+
     (let [ppt (XMLSlideShow. input-stream)]
       (doseq [^XSLFSlide slide (.getSlides ppt)]
         (doseq [shape (.getShapes slide)]
@@ -19,6 +25,9 @@
                     (doseq [paragraph (.getParagraphs tx-body)] ;; Iterate over paragraphs
                       (let [original-text (.getText paragraph)]
                         (when (and (not (clojure.string/blank? original-text)))
+                          ; DONE: use state here, and stop processing by using throw
+                          (if (not (:running app-state))
+                            (throw (Exception. "Processing Interrupted")))
                           (let [translation (waves.utils/translate options original-text)]
                             (when translation
                               (try (.setText paragraph translation) (catch Exception e (println (.getMessage e))))))))))))))

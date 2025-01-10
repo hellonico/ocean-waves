@@ -45,6 +45,7 @@
  {org.clojure/clojure {:mvn/version "1.11.0"}
   org.reflections/reflections {:mvn/version "0.10.2"}
   cljfx/cljfx {:mvn/version "1.9.3"}
+  hellonico/origami-pink {:git/url "https://github.com/hellonico/origami-pink.git" :git/sha "7bc0b9267170e4f340298b06423a5e9dc96a0fcf"}
 
   ;org.docx4j/docx4j-core {:mvn/version "11.5.1"}
   ;org.docx4j/docx4j-JAXB-ReferenceImpl {:mvn/version "11.5.1"}
