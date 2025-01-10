@@ -36,9 +36,14 @@
         (println "\nUsage:\n" summary)
         (System/exit 1))
       :else
-      (let [{:keys [^String input ^String output] :as config} options]
+      (let [
+            {:keys [^String input ^String output] :as config} options
+            state (atom options)
+            ]
+        (swap! state assoc
+               :stream false
+               :file-path input)
         (clojure.pprint/pprint options)
-        (waves.core/update-ppt-text input output (conj config {:stream false}))
-
-
+        (waves.core/update-ppt-text state)
+        ;(waves.core/update-ppt-text input output (conj config {:stream false}))
         ))))
