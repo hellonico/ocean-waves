@@ -1,9 +1,7 @@
 (ns waves.cli
   (:gen-class)
-  (:require [clojure.tools.cli])
-  (:require [waves.core]
-            ;[waves.core2]
-            ))
+  (:require [clojure.tools.cli]
+            [waves.core]))
 
 (def cli-options
   [["-h" "--help"]
@@ -26,9 +24,8 @@
 (defn -main [& args]
   (let [{:keys [options errors summary]} (clojure.tools.cli/parse-opts args cli-options)]
     (cond
-      (:help options) ; help => exit OK with usage summary
+      (:help options)
       {:exit-message (println "\nUsage:\n" summary) :ok? true}
-
       (seq errors)
       (do
         (println "Error parsing options:")
@@ -44,6 +41,4 @@
                :stream false
                :file-path input)
         (clojure.pprint/pprint options)
-        (waves.core/update-ppt-text state)
-        ;(waves.core/update-ppt-text input output (conj config {:stream false}))
-        ))))
+        (waves.core/update-ppt-text state)))))

@@ -1,13 +1,14 @@
 (ns waves.ui
   (:gen-class)
   (:require [cljfx.api :as fx]
+            ;[cljfx.css :as css]
             [clojure.core.async :as async]
             [clojure.java.io :as io]
             [pyjama.state]
             [waves.core]
+            [waves.fx :refer :all]
             )
-  (:import (java.net URL)
-           (javafx.scene.image Image)
+  (:import (javafx.scene.image Image)
            (javafx.scene.input DragEvent TransferMode)
            (javafx.stage FileChooser FileChooser$ExtensionFilter)))
 
@@ -32,45 +33,41 @@
 
 (defn long-running-task []
   (waves.core/update-ppt-text app-state))
+;
+;(def spinner-image
+;  (Image. (io/input-stream (io/resource "spinner.gif"))))
+;
+;(def check-image
+;  (Image. (io/input-stream (io/resource "check.png"))))
+;
+;(def failed-image
+;  (Image. (io/input-stream (io/resource "failed.png"))))
 
-(def spinner-image
-  (Image. (io/input-stream (io/resource "pink/spinner.gif"))))
-
-(def check-image
-  (Image. (io/input-stream (io/resource "check.png"))))
-
-(def failed-image
-  (Image. (io/input-stream (io/resource "failed.png"))))
-
-(def reload-image
-  (Image. (io/input-stream (io/resource "reload.png"))))
-
-(def reloading-image
-  (Image. (io/input-stream (io/resource "reload.gif"))))
-
-(defn rsc-image[file]
-  (Image. (io/input-stream (io/resource file))))
-
-(defn valid-url? [url]
-  (try
-    (URL. url)
-    true
-    (catch Exception _ false)))
-
+; TODO: generic
 (defn handle-drag-dropped [event]
-  (prn event)
   (let [db (.getDragboard event)
         files (.getFiles db)
         file (first files)]
     (when file
       (let [file-path (.getAbsolutePath file)]
-        (swap! app-state assoc :file-path file-path)
-        ;(prn file-path)
-        ))))
+        (swap! app-state assoc :file-path file-path)))))
 
+; TODO generic
+(defn on-drag-over [^DragEvent event]
+    (let [db (.getDragboard event)]
+      (when (.hasFiles db)
+        (doto event
+          (.acceptTransferModes
+            (into-array TransferMode [TransferMode/COPY]))))))
+
+;(def style
+;  (css/register ::style
+;                {":info" {:-fx-background-color "#bbf"
+;                          ":hover"              {:-fx-background-color "#ddf"}}
+;                 }))
 (defn root-view [state]
   {:fx/type          :stage
-   :title            "PPTX Translator"
+   :title            "Waves [PPTX Translator]"
    ;:event-handler event-handler
    :showing          true
    :width            500
@@ -80,25 +77,27 @@
    :scene            {:fx/type :scene
                       :root    {:fx/type  :v-box
                                 :spacing  10
-                                ;:stylesheets #{(.toExternalForm (io/resource "pink/terminal.css"))}
+                                :stylesheets #{"extra.css"
+                                               ;(::css/url style)
+                                               (.toExternalForm (io/resource "terminal.css"))}
                                 :padding  20
                                 :children [
-                                           {:fx/type :label
-                                            :text    "PPTX Translator"}
+                                           ;{:fx/type :label
+                                           ; :text    "PPTX Translator"
+                                            ;:classes
+                                            ;:pseudo-classes #{:title}
+                                            ;}
                                            {:fx/type :label
                                             :text
-                                            (if-let [file-path (:file-path app-state)]
-                                              (.getName file-path)
+                                            (if-let [file-path (:file-path @app-state)]
+                                              (.getName (io/as-file file-path))
                                               "No file selected")
                                             }
                                            {:fx/type   :button
                                             :text      "Select or Drag File"
-                                            :on-drag-over    (fn [^DragEvent event]
-                                                               (let [db (.getDragboard event)]
-                                                                 (when (.hasFiles db)
-                                                                   (doto event
-                                                                     (.acceptTransferModes
-                                                                       (into-array TransferMode [TransferMode/COPY]))))))
+                                            ;:h-box/hgrow      :always
+                                            :max-width Double/MAX_VALUE
+                                            :on-drag-over    on-drag-over
                                             :on-drag-dropped handle-drag-dropped
                                             :on-action (fn [_]
                                                          (let [file (.getAbsolutePath (file-chooser))]
@@ -117,10 +116,11 @@
                                                                   (do
                                                                     (swap! app-state assoc :url %)
                                                                     (pyjama.state/local-models app-state))))}
+                                           {:fx/type :label
+                                            :text "Model"}
                                            {:fx/type   :h-box
                                             :alignment :center-left
                                             :children  [
-                                                        {:fx/type :label :text "Model"}
                                                         {:fx/type          :combo-box
                                                          :items            (:local-models state)
                                                          :value            (:model state)
@@ -137,7 +137,7 @@
                                                                                 (println %)
                                                                                 (try
                                                                                   (pyjama.state/local-models app-state)
-                                                                                  (catch Exception e))
+                                                                                  (catch Exception _))
                                                                                 (swap! app-state assoc :loading false)
                                                                                 )
                                                            }
@@ -164,7 +164,7 @@
                                                                      (swap! app-state assoc :status :running)
                                                                      (future
                                                                        (try
-                                                                         (long-running-task) ; Simulate success
+                                                                         (long-running-task)
                                                                          (swap! app-state assoc :status :completed)
                                                                          (catch Exception e
                                                                            (.printStackTrace e)
@@ -172,7 +172,7 @@
                                                        (case (:status state)
                                                          :idle {:fx/type :region :pref-width 24 :pref-height 24} ; Empty space
                                                          :running {:fx/type    :image-view
-                                                                   :image      spinner-image
+                                                                   :image      (rsc-image "spinner.gif")
                                                                    :on-mouse-clicked (fn[_]
                                                                                        (swap! app-state assoc :status :stopping))
                                                                    :fit-width  24
@@ -185,17 +185,17 @@
                                                           :spacing  10
                                                           :children [
                                                                      {:fx/type    :image-view
-                                                                      :image      check-image
+                                                                      :image      (rsc-image "check.png")
                                                                       :fit-width  24
                                                                       :fit-height 24}
                                                                      {:fx/type   :button
                                                                       :text      "Open Output File"
                                                                       :on-action (fn [_]
-                                                                                   (waves.utils/open-file (@app-state :output)))}
+                                                                                   (open-file (@app-state :output)))}
                                                                      ]
                                                           } ; Success
                                                          :failed {:fx/type    :image-view
-                                                                  :image      failed-image
+                                                                  :image      (rsc-image "failed.png")
                                                                   :fit-width  24
                                                                   :fit-height 24})
                                                        ]
@@ -215,6 +215,5 @@
       (pyjama.state/local-models app-state)
       (catch Exception e (do
                            (swap! app-state assoc :local-models [] :url "" :model "")
-                           )))
-    )
+                           ))))
   (fx/mount-renderer app-state renderer))
