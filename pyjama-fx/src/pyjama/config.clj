@@ -1,7 +1,7 @@
 (ns pyjama.config
   (:require [clojure.edn :as edn]
-            [clojure.pprint :as pprint]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.pprint :as pprint])
   (:import (java.io FileReader PushbackReader)
            (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
@@ -42,3 +42,15 @@
     (with-open [rdr (PushbackReader. (FileReader. latest-file))]
       (edn/read rdr))
     {}))
+
+(defn save-on-shutdown [app-name app-state]
+  (.addShutdownHook (Runtime/getRuntime) (Thread. #(pyjama.config/save-atom app-name app-state))))
+
+(defn load-on-start [app-name app-state]
+  (let [latest (pyjama.config/load-latest app-name)]
+    (if (seq latest)
+      (reset! app-state latest))))
+
+(defn shutdown-and-startup [app-name app-state]
+  (save-on-shutdown app-name app-state)
+  (load-on-start app-name app-state))

@@ -3,13 +3,11 @@
   (:require [cljfx.api :as fx]
             [clojure.core.async :as async]
             [clojure.java.io :as io]
-            [pyjama.config]
+            [pyjama.config :refer :all]
             [pyjama.fx :refer :all]
             [pyjama.state]
             [waves.core])
-  (:import (javafx.scene.image Image)
-           (javafx.scene.input DragEvent TransferMode)
-           (javafx.stage FileChooser FileChooser$ExtensionFilter)))
+  (:import (javafx.scene.image Image)))
 
 (def app-state
   (atom {:file-path       nil
@@ -17,38 +15,16 @@
          :debug           false
          :output          nil
          :model           "llama3.2"
-         :models          []
          :local-models    []
          ;:system-prompt "You are a machine translator from Japanese to English. You are given one string each time. When the string is in English you return the string as is. If the string is in Japanese, you answer with the best translation. Your answer will only contain the translation and the translation only, nothing else, no question, no explanation. If you do not know, answer with the same string as input"
          :prompt-template "You are a machine translator from Japanese to English. You are given one string each time. When the string is in English you return the string as is. If the string is in Japanese, you answer with the best translation. Your answer will only contain the translation and the translation only, nothing else, no question, no explanation. If you do not know, answer with the same string as input. Translate: %s"
          :status          :idle}))
 
-(defn file-chooser []
-  (let [chooser (FileChooser.)]
-    (.getExtensionFilters chooser)
-    (.add (.getExtensionFilters chooser)
-          (FileChooser$ExtensionFilter. "PPT and PPTX Files" ["*.ppt" "*.pptx"]))
-    (.showOpenDialog chooser nil)))
-
-(defn long-running-task []
-  (waves.core/update-ppt-text app-state))
-
-; TODO: generic
-(defn handle-drag-dropped [event]
-  (let [db (.getDragboard event)
-        files (.getFiles db)
-        file (first files)]
-    (when file
-      (let [file-path (.getAbsolutePath file)]
-        (swap! app-state assoc :file-path file-path)))))
-
-; TODO generic
-(defn on-drag-over [^DragEvent event]
-  (let [db (.getDragboard event)]
-    (when (.hasFiles db)
-      (doto event
-        (.acceptTransferModes
-          (into-array TransferMode [TransferMode/COPY]))))))
+(defn input-updated [file]
+  (when file
+    (swap! app-state assoc :file-path (.getAbsolutePath file))
+    (swap! app-state assoc :output
+           (waves.utils/compute-output-file-path (:file-path @app-state)))))
 
 (defn root-view [state]
   {:fx/type          :stage
@@ -75,15 +51,11 @@
                                                :text            "Select or Drag File"
                                                :max-width       Double/MAX_VALUE
                                                :on-drag-over    on-drag-over
-                                               :on-drag-dropped handle-drag-dropped
+                                               :on-drag-dropped #(let[ files (handle-drag-dropped %)]
+                                                                   (when-let [file (first files)] (input-updated file)))
                                                :on-action       (fn [_]
-                                                                  (let [file (.getAbsolutePath (file-chooser))]
-                                                                    (when file
-                                                                      (swap! app-state assoc :file-path file)
-                                                                      (swap!
-                                                                        app-state assoc :output
-                                                                        (waves.utils/compute-output-file-path (:file-path @app-state)))
-                                                                      )))}
+                                                                  (let [file (file-chooser "PPT and PPTX Files" ["*.ppt" "*.pptx"])]
+                                                                    (input-updated file)))}
 
                                               {:fx/type :label :text "URL"}
                                               {:fx/type            :text-field
@@ -142,7 +114,7 @@
                                                                         (swap! app-state assoc :status :running)
                                                                         (future
                                                                           (try
-                                                                            (long-running-task)
+                                                                            (waves.core/update-ppt-text app-state)
                                                                             (swap! app-state assoc :status :completed)
                                                                             (catch Exception e
                                                                               (.printStackTrace e)
@@ -196,11 +168,7 @@
     :opts {:app-state app-state}))
 
 (defn -main [& args]
-  (.addShutdownHook (Runtime/getRuntime) (Thread. #(pyjama.config/save-atom "waves" app-state)))
-
-  (let [latest (pyjama.config/load-latest "waves")]
-    (if (seq latest)
-      (reset! app-state latest)))
+  (shutdown-and-startup "waves" app-state)
 
   (async/thread
     (try
