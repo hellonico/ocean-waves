@@ -59,7 +59,7 @@
    :width            500
    :on-close-request (fn [_] (System/exit 0))               ; Exit when the window is closed
    :icons            [(Image. (io/input-stream (io/resource "wave.png")))] ; Set the app icon
-   :height           600
+   :height           700
    :scene            {:fx/type :scene
                       :root    {:fx/type     :v-box
                                 :spacing     10
@@ -89,7 +89,7 @@
                                               {:fx/type :label :text "URL"}
                                               {:fx/type         :text-field
                                                :text            (:url state)
-                                               :on-text-changed #(do
+                                               :on-focused-changed #(do
                                                                    (if (valid-url? %)
                                                                      (do
                                                                        (swap! app-state assoc :url %)
@@ -179,6 +179,14 @@
                                                           ]
 
                                                }
+                                              {:fx/type :label :text "Input"}
+                                              {:fx/type :text-area
+                                               :wrap-text       true
+                                               :text    (get-in state [:processing :input])}
+                                              {:fx/type :label :text "Output"}
+                                              {:fx/type :text-area
+                                               :wrap-text       true
+                                               :text    (get-in state [:processing :output])}
 
                                               ]}}})
 
