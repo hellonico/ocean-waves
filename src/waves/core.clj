@@ -40,6 +40,8 @@
             (when (instance? XSLFTextShape shape)
               (let [text (.getText ^XSLFTextShape shape)]
                 (when (and (not (clojure.string/blank? text)))
+                  (if (not (= :running (:status @app-state)))
+                    (throw (Exception. (str "Processing Interrupted:" @app-state))))
                   (let [translation (waves.utils/translate options text)]
                     (when translation
                       (swap! app-state assoc-in [:processing] {:input text, :output translation})

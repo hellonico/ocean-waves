@@ -1,13 +1,12 @@
 (ns waves.ui
   (:gen-class)
   (:require [cljfx.api :as fx]
-    ;[cljfx.css :as css]
             [clojure.core.async :as async]
             [clojure.java.io :as io]
+            [pyjama.config]
             [pyjama.state]
             [waves.core]
-            [waves.fx :refer :all]
-            )
+            [pyjama.fx :refer :all])
   (:import (javafx.scene.image Image)
            (javafx.scene.input DragEvent TransferMode)
            (javafx.stage FileChooser FileChooser$ExtensionFilter)))
@@ -15,7 +14,7 @@
 (def app-state
   (atom {:file-path       nil
          :url             "http://localhost:11434"
-         :debug           true
+         :debug           false
          :output          nil
          :model           "llama3.2"
          :models          []
@@ -87,13 +86,13 @@
                                                                       )))}
 
                                               {:fx/type :label :text "URL"}
-                                              {:fx/type         :text-field
-                                               :text            (:url state)
+                                              {:fx/type            :text-field
+                                               :text               (:url state)
                                                :on-focused-changed #(do
-                                                                   (if (valid-url? %)
-                                                                     (do
-                                                                       (swap! app-state assoc :url %)
-                                                                       (pyjama.state/local-models app-state))))}
+                                                                      (if (valid-url? %)
+                                                                        (do
+                                                                          (swap! app-state assoc :url %)
+                                                                          (pyjama.state/local-models app-state))))}
                                               {:fx/type :label
                                                :text    "Model"}
                                               {:fx/type   :h-box
@@ -180,13 +179,13 @@
 
                                                }
                                               {:fx/type :label :text "Input"}
-                                              {:fx/type :text-area
-                                               :wrap-text       true
-                                               :text    (get-in state [:processing :input])}
+                                              {:fx/type   :text-area
+                                               :wrap-text true
+                                               :text      (get-in state [:processing :input])}
                                               {:fx/type :label :text "Output"}
-                                              {:fx/type :text-area
-                                               :wrap-text       true
-                                               :text    (get-in state [:processing :output])}
+                                              {:fx/type   :text-area
+                                               :wrap-text true
+                                               :text      (get-in state [:processing :output])}
 
                                               ]}}})
 
@@ -196,9 +195,16 @@
     :opts {:app-state app-state}))
 
 (defn -main [& args]
+  (.addShutdownHook (Runtime/getRuntime) (Thread. #(pyjama.config/save-atom "waves" app-state)))
+
   (async/thread
     (try
       (pyjama.state/local-models app-state)
       (catch Exception _ (do
                            (swap! app-state assoc :local-models [] :url "" :model "")))))
+
+  (let [latest (pyjama.config/load-latest "waves")]
+    (if (seq latest)
+      (reset! app-state latest)))
+
   (fx/mount-renderer app-state renderer))

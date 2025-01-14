@@ -60,6 +60,12 @@
   org.reflections/reflections {:mvn/version "0.10.2"}
   cljfx/cljfx {:mvn/version "1.9.3"}
 
+  hellonico/pyjama-fx {
+                          ;:git/url "https://github.com/hellonico/origami-pink.git"
+                          :local/root "./pyjama-fx"
+                          ;:deps/root "pink"
+                          ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
+                          }
   hellonico/origami-pink {
                           :git/url "https://github.com/hellonico/origami-pink.git"
                           ;:local/root "../origami-pink/pink"

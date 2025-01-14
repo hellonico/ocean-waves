@@ -1,4 +1,4 @@
-(ns waves.fx
+(ns pyjama.fx
   (:require [clojure.java.io :as io])
   (:import (java.awt Desktop)
            (java.net URL)
@@ -8,7 +8,7 @@
   (let [desktop (Desktop/getDesktop)]
     (.open desktop (clojure.java.io/as-file file-path))))
 
-(defn rsc-image[file]
+(defn rsc-image [file]
   (Image. (io/input-stream (io/resource file))))
 
 (defn valid-url? [url]
