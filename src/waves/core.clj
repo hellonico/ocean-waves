@@ -1,8 +1,55 @@
 (ns waves.core
-  (:require [pyjama.core]
+  (:require [clojure.string :as str]
+            [pyjama.core]
             [waves.utils])
   (:import (java.io FileInputStream FileOutputStream)
            (org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTable XSLFTableCell XSLFTextShape)))
+
+(defn translate-many-ps [options paragraphs]
+
+  (if (not (= :running (:status @options)))
+    (throw (Exception. (str "Processing Interrupted:" @options))))
+
+  (doseq [tp paragraphs]
+    ;; Extract text of the entire paragraph
+    (let [paragraph-text (.getText tp)
+          first-run (first (.getTextRuns tp))
+          format {:font   (try (.getFontFamily first-run) (catch Exception e nil))
+                  :size   (try (.getFontSize first-run) (catch Exception e nil))
+                  ;:color (.getFillColor first-run)
+                  :bold   (try (.isBold first-run) (catch Exception e nil))
+                  :italic (try (.isItalic first-run) (catch Exception e nil))}
+          translated-text (if (not (str/blank? paragraph-text)) (waves.utils/translate @options paragraph-text) "")
+          ]
+      (swap! options assoc-in [:processing]
+             {:input paragraph-text, :output translated-text})
+
+      ;; Clear the existing paragraph text
+      (try
+        ;; Use reflection to call the protected .clearButKeepProperties method
+        (let [clear-method (.getDeclaredMethod (.getClass tp) "clearButKeepProperties" nil)]
+          (.setAccessible clear-method true)                ;; Make the method accessible
+          (.invoke clear-method tp nil))                    ;; Invoke the method on the paragraph
+
+        ;; Add the translated text as a new run and apply formatting
+        (let [new-run (.addNewTextRun tp)]
+          (.setText new-run translated-text)
+          ;; Reapply formatting from the first text run
+          (when-let [font (:font format)] (.setFontFamily new-run font))
+          (when-let [size (:size format)] (.setFontSize new-run size))
+          ;(when-let [color (:color format)] (.setFillColor new-run color))
+          (when (:bold format) (.setBold new-run true))
+          (when (:italic format) (.setItalic new-run true)))
+
+        (catch Exception e (.setText tp translated-text))))))
+
+
+(defn translate-one-shape [options ^XSLFTextShape shape]
+  (translate-many-ps options (.getTextParagraphs ^XSLFTextShape shape)))
+(defn translate-one-cell [options ^XSLFTableCell cell]
+  (let [tx-body (.getTextBody cell)]                        ;; Get the text body from the cell
+    (when (some? tx-body)
+      (translate-many-ps options (.getParagraphs tx-body)))))
 
 (defn update-ppt-text [app-state]
   ;(prn @app-state)
@@ -22,28 +69,7 @@
             (when (instance? XSLFTable shape)
               (doseq [row (.getRows ^XSLFTable shape)]
                 (doseq [^XSLFTableCell cell (.getCells row)]
-                  (let [tx-body (.getTextBody cell)]        ;; Get the text body from the cell
-                    (when (some? tx-body)
-                      (doseq [paragraph (.getParagraphs tx-body)] ;; Iterate over paragraphs
-                        (let [original-text (.getText paragraph)]
-                          (when (and (not (clojure.string/blank? original-text)))
-                            (let [translation (waves.utils/translate options original-text)]
-                              (when translation
-                                (try (.setText paragraph translation) (catch Exception e (println (.getMessage e)))))
-                              (swap! app-state assoc-in [:processing] {:input original-text, :output translation})
-                              )
-                            ; D: use state here, and stop processing by using throw
-                            (if (not (= :running (:status @app-state)))
-                              (throw (Exception. (str "Processing Interrupted:" @app-state))))
-                            ))))))))
-            ;; Process other shapes (e.g., text shapes)
+                  (translate-one-cell app-state cell))))
             (when (instance? XSLFTextShape shape)
-              (let [text (.getText ^XSLFTextShape shape)]
-                (when (and (not (clojure.string/blank? text)))
-                  (if (not (= :running (:status @app-state)))
-                    (throw (Exception. (str "Processing Interrupted:" @app-state))))
-                  (let [translation (waves.utils/translate options text)]
-                    (when translation
-                      (swap! app-state assoc-in [:processing] {:input text, :output translation})
-                      (try (.setText ^XSLFTextShape shape translation) (catch Exception e (println (.getMessage e)))))))))))
+              (translate-one-shape app-state shape))))
         (.write ppt output-stream)))))

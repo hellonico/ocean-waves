@@ -1,5 +1,6 @@
 (ns pyjama.config
   (:require [clojure.edn :as edn]
+            [clojure.pprint :as pprint]
             [clojure.java.io :as io])
   (:import (java.io FileReader PushbackReader)
            (java.time LocalDateTime)
@@ -22,9 +23,8 @@
            (sort-by #(.lastModified %))
            reverse)
       [])))
-
 (defn save-atom
-  "Saves the content of an atom (a map) to a file with a date-stamped name."
+  "Saves the content of an atom (a map) to a file with a date-stamped name in a pretty-printed format."
   [app-name state-atom]
   (let [config-dir (get-config-dir app-name)
         timestamp (-> (LocalDateTime/now)
@@ -32,7 +32,8 @@
         file-name (str timestamp ".edn")
         file-path (io/file config-dir file-name)]
     (io/make-parents file-path)
-    (spit file-path (pr-str @state-atom))))
+    (with-open [writer (io/writer file-path)]
+      (pprint/pprint @state-atom writer))))
 
 (defn load-latest
   "Loads the latest `.edn` file from the config directory, or returns an empty map if no file is found."
