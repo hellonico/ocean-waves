@@ -2,7 +2,8 @@
   (:require [clojure.java.io :as io])
   (:import (java.awt Desktop)
            (java.net URL)
-           (javafx.scene.input TransferMode)
+           (javafx.scene.image Image)
+           (javafx.scene.input DragEvent TransferMode)
            (javafx.stage FileChooser FileChooser$ExtensionFilter)))
 
 (defn open-file [file-path]
