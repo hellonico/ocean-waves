@@ -88,11 +88,12 @@
                                               {:fx/type :label :text "URL"}
                                               {:fx/type            :text-field
                                                :text               (:url state)
-                                               :on-focused-changed #(do
-                                                                      (if (valid-url? %)
-                                                                        (do
-                                                                          (swap! app-state assoc :url %)
-                                                                          (pyjama.state/local-models app-state))))}
+                                               :on-text-changed #(do
+                                                                   (if (valid-url? %)
+                                                                     (do
+                                                                       (swap! app-state assoc :url %))))
+                                               :on-focused-changed (fn[_] (pyjama.state/local-models app-state))
+                                               }
                                               {:fx/type :label
                                                :text    "Model"}
                                               {:fx/type   :h-box
