@@ -5,14 +5,16 @@
            (org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTable XSLFTableCell XSLFTextShape)))
 
 (defn update-ppt-text [ app-state ]
+  ;(prn @app-state)
   (let [
-        input-path (@app-state :file-path)
-        output-path (@app-state :output)
+        input-path (:file-path @app-state )
+        ;_ (prn input-path)
+        output-path (or (:output @app-state ) (waves.utils/compute-output-file-path input-path))
+        ;_ (prn output-path)
         options  @app-state
         ]
   (with-open [input-stream (FileInputStream. ^String input-path)
               output-stream (FileOutputStream. ^String output-path)]
-
     (let [ppt (XMLSlideShow. input-stream)]
       (doseq [^XSLFSlide slide (.getSlides ppt)]
         (doseq [shape (.getShapes slide)]
@@ -25,7 +27,6 @@
                     (doseq [paragraph (.getParagraphs tx-body)] ;; Iterate over paragraphs
                       (let [original-text (.getText paragraph)]
                         (when (and (not (clojure.string/blank? original-text)))
-
                           (let [translation (waves.utils/translate options original-text)]
                             (when translation
                               (try (.setText paragraph translation) (catch Exception e (println (.getMessage e))))))
