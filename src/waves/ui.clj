@@ -4,9 +4,9 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io]
             [pyjama.config]
+            [pyjama.fx :refer :all]
             [pyjama.state]
-            [waves.core]
-            [pyjama.fx :refer :all])
+            [waves.core])
   (:import (javafx.scene.image Image)
            (javafx.scene.input DragEvent TransferMode)
            (javafx.stage FileChooser FileChooser$ExtensionFilter)))
@@ -88,11 +88,11 @@
                                               {:fx/type :label :text "URL"}
                                               {:fx/type            :text-field
                                                :text               (:url state)
-                                               :on-text-changed #(do
-                                                                   (if (valid-url? %)
-                                                                     (do
-                                                                       (swap! app-state assoc :url %))))
-                                               :on-focused-changed (fn[_] (pyjama.state/local-models app-state))
+                                               :on-text-changed    #(do
+                                                                      (if (valid-url? %)
+                                                                        (do
+                                                                          (swap! app-state assoc :url %))))
+                                               :on-focused-changed (fn [_] (pyjama.state/local-models app-state))
                                                }
                                               {:fx/type :label
                                                :text    "Model"}
@@ -198,14 +198,13 @@
 (defn -main [& args]
   (.addShutdownHook (Runtime/getRuntime) (Thread. #(pyjama.config/save-atom "waves" app-state)))
 
-  (async/thread
-    (try
-      (pyjama.state/local-models app-state)
-      (catch Exception _ (do
-                           (swap! app-state assoc :local-models [] :url "" :model "")))))
-
   (let [latest (pyjama.config/load-latest "waves")]
     (if (seq latest)
       (reset! app-state latest)))
+
+  (async/thread
+    (try
+      (pyjama.state/local-models app-state)
+      (catch Exception _ (swap! app-state assoc :local-models [] :url "" :model ""))))
 
   (fx/mount-renderer app-state renderer))
