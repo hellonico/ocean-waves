@@ -68,7 +68,7 @@
                           }
   hellonico/origami-pink {
                           ;:git/url "https://github.com/hellonico/origami-pink.git"
-                          :local/root "../pink/pink"
+                          :local/root "../origami-pink/pink"
                           ;:deps/root "pink"
                           ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
                           }

@@ -11,7 +11,6 @@
     (throw (Exception. (str "Processing Interrupted:" @options))))
 
   (doseq [tp paragraphs]
-    ;; Extract text of the entire paragraph
     (let [paragraph-text (.getText tp)
           first-run (first (.getTextRuns tp))
           format {:font   (try (.getFontFamily first-run) (catch Exception e nil))
@@ -28,13 +27,11 @@
       (try
         ;; Use reflection to call the protected .clearButKeepProperties method
         (let [clear-method (.getDeclaredMethod (.getClass tp) "clearButKeepProperties" nil)]
-          (.setAccessible clear-method true)                ;; Make the method accessible
-          (.invoke clear-method tp nil))                    ;; Invoke the method on the paragraph
+          (.setAccessible clear-method true)
+          (.invoke clear-method tp nil))
 
-        ;; Add the translated text as a new run and apply formatting
         (let [new-run (.addNewTextRun tp)]
           (.setText new-run translated-text)
-          ;; Reapply formatting from the first text run
           (when-let [font (:font format)] (.setFontFamily new-run font))
           (when-let [size (:size format)] (.setFontSize new-run size))
           ;(when-let [color (:color format)] (.setFillColor new-run color))
@@ -52,12 +49,8 @@
       (translate-many-ps options (.getParagraphs tx-body)))))
 
 (defn update-ppt-text [app-state]
-  ;(prn @app-state)
-  (let [
-        input-path (:file-path @app-state)
-        ;_ (prn input-path)
+  (let [input-path (:file-path @app-state)
         output-path (or (:output @app-state) (waves.utils/compute-output-file-path input-path))
-        ;_ (prn output-path)
         options @app-state
         ]
     (with-open [input-stream (FileInputStream. ^String input-path)
@@ -65,7 +58,6 @@
       (let [ppt (XMLSlideShow. input-stream)]
         (doseq [^XSLFSlide slide (.getSlides ppt)]
           (doseq [shape (.getShapes slide)]
-            ;; Process table shapes
             (when (instance? XSLFTable shape)
               (doseq [row (.getRows ^XSLFTable shape)]
                 (doseq [^XSLFTableCell cell (.getCells row)]
