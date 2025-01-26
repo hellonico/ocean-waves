@@ -1,29 +1,29 @@
 (ns waves.utils
   (:require [clojure.java.io :as io]))
 
-(defn translate[config text]
+(defn translate [config text]
   (if (:debug config)
     (println ":> " text "\n"))
 
-(let [
-      _options (if (contains? config :prompt)
-                 config
-                 (conj {:prompt (format (:prompt-template config) text)} config))
-      ; TODO: pass through
-      translation (clojure.string/trim
-                    (pyjama.core/ollama
-                      (:url config)
-                      :generate
-                      _options
-                      :response
-                      ))
-      ]
+  (let [
+        _options (if (contains? config :prompt)
+                   config
+                   (conj {:prompt (format (:prompt-template config) text)} config))
+        ; TODO: pass through
+        translation (clojure.string/trim
+                      (pyjama.core/ollama
+                        (:url config)
+                        :generate
+                        _options
+                        :response
+                        ))
+        ]
 
-  (if (:debug config)
-    (println "< " translation "\n"))
+    (if (:debug config)
+      (println "< " translation "\n"))
 
-  translation
-  ))
+    translation
+    ))
 
 (defn compute-output-file-path [input-file-path]
   (let [file (io/file input-file-path)
