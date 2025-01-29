@@ -37,8 +37,6 @@
             {:keys [^String input ^String output] :as config} options
             state (atom options)
             ]
-        (swap! state assoc
-               :stream false
-               :file-path input)
+        (swap! state assoc :stream false :file-path input)
         (clojure.pprint/pprint options)
         (waves.core/update-ppt-text state)))))

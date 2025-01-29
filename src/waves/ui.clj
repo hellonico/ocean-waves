@@ -22,9 +22,9 @@
 
 (defn input-updated [file]
   (when file
-    (swap! app-state assoc :file-path (.getAbsolutePath file))
-    (swap! app-state assoc :output
-           (waves.utils/compute-output-file-path (:file-path @app-state)))))
+    (swap! app-state assoc
+           :file-path (.getAbsolutePath file)
+           :output (waves.core/compute-output-file-path (:file-path @app-state)))))
 
 (defn root-view [state]
   {:fx/type          :stage

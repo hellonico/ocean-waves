@@ -1,9 +1,41 @@
 (ns waves.core
-  (:require [clojure.string :as str]
-            [pyjama.core]
-            [waves.utils])
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [pyjama.core])
   (:import (java.io FileInputStream FileOutputStream)
            (org.apache.poi.xslf.usermodel XMLSlideShow XSLFSlide XSLFTable XSLFTableCell XSLFTextShape)))
+
+
+(defn translate [config text]
+  (if (:debug config)
+    (println ":> " text "\n"))
+
+  (let [
+        _options (if (contains? config :prompt)
+                   config
+                   (conj {:prompt (format (:prompt-template config) text)} config))
+        ; TODO: pass through
+        translation (clojure.string/trim
+                      (pyjama.core/ollama
+                        (:url config)
+                        :generate
+                        _options
+                        :response
+                        ))
+        ]
+
+    (if (:debug config)
+      (println "< " translation "\n"))
+
+    translation
+    ))
+
+(defn compute-output-file-path [input-file-path]
+  (let [file (io/file input-file-path)
+        parent-dir (.getParent file)
+        original-name (.getName file)
+        translated-name (str "translated_" original-name)]
+    (str parent-dir "/" translated-name)))
 
 (defn translate-many-ps [options paragraphs]
 
@@ -18,7 +50,7 @@
                   ;:color (.getFillColor first-run)
                   :bold   (try (.isBold first-run) (catch Exception e nil))
                   :italic (try (.isItalic first-run) (catch Exception e nil))}
-          translated-text (if (not (str/blank? paragraph-text)) (waves.utils/translate @options paragraph-text) "")
+          translated-text (if (not (str/blank? paragraph-text)) (translate @options paragraph-text) "")
           ]
       (swap! options assoc-in [:processing]
              {:input paragraph-text, :output translated-text})
@@ -43,6 +75,7 @@
 
 (defn translate-one-shape [options ^XSLFTextShape shape]
   (translate-many-ps options (.getTextParagraphs ^XSLFTextShape shape)))
+
 (defn translate-one-cell [options ^XSLFTableCell cell]
   (let [tx-body (.getTextBody cell)]                        ;; Get the text body from the cell
     (when (some? tx-body)
@@ -50,8 +83,8 @@
 
 (defn update-ppt-text [app-state]
   (let [input-path (:file-path @app-state)
-        output-path (or (:output @app-state) (waves.utils/compute-output-file-path input-path))
-        options @app-state
+        output-path (or (:output @app-state) (compute-output-file-path input-path))
+        ;options @app-state
         ]
     (with-open [input-stream (FileInputStream. ^String input-path)
                 output-stream (FileOutputStream. ^String output-path)]
