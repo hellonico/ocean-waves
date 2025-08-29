@@ -1,9 +1,13 @@
 {
- :paths ["src", "resources"]
+ :paths ["src" "resources"]
  ;:paths ["src"]
  :aliases
 
  {
+
+  :ui
+  {}
+
   :build-tools
   ;{:deps      {build-tools/build-tools {:local/root "../build-tools"}}
   ; ;:exec-fn   build-tools.core/build-all
@@ -16,74 +20,69 @@
      :sha     "1c180d133ac592bb1fc2eb7241494da5d84b314d"}}
    }
 
- ; :find-classes
- ; {:extra-deps {org.reflections/reflections {:mvn/version "0.10.2"}}
- ;  :paths ["scripts"]
- ;  :exec-fn my.namespace/find-and-print-classes}
- ;
- ; :build
- ; {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6" :git/sha "52cf7d6"}} :ns-default build}
- ;
- ;:native-image
- ;{:main-opts ["-m" "clj.native-image" "core"
- ;
- ;             "--initialize-at-build-time"
- ;             "--initialize-at-run-time=org.apache.http.impl.auth.NTLMEngineImpl"
- ;             "--initialize-at-run-time=sun.java2d.Disposer"
- ;             "--initialize-at-run-time=org.apache.poi.util.RandomSingleton"
- ;             "--initialize-at-run-time=org.apache.poi.ooxml.POIXMLFactory"
- ;             "--initialize-at-run-time=org.openxmlformats.schemas.presentationml.x2006.main.SldMasterDocument"
- ;             ; this almost worked until it did not w
- ;             "--initialize-at-run-time=org.apache.xmlbeans.impl.values.XmlComplexContentImpl"
- ;             "--initialize-at-run-time=org.docx4j.openpackaging.parts.PresentationML.JaxbPmlPart"
- ;             "--initialize-at-run-time=org.docx4j.com.google.common.cache.Striped64"
- ;
- ;             ;"--trace-object-instantiation=java.security.SecureRandom"
- ;             ;"--trace-object-instantiation=java.lang.Thread"
- ;             "--enable-url-protocols=http"
- ;             "-H:ReflectionConfigurationFiles=wave.json"
- ;             ; TODO: replace with -Os or -O3 when finished the json file
- ;             ; https://www.graalvm.org/latest/reference-manual/native-image/optimizations-and-performance/
- ;             "-Ob"
- ;             "-o waves"
- ;             ]
- ; :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
- ; :extra-deps
- ; {clj.native-image/clj.native-image
- ;  {:git/url "https://github.com/taylorwood/clj.native-image.git"
- ;   :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}
- ; }
+  ; :find-classes
+  ; {:extra-deps {org.reflections/reflections {:mvn/version "0.10.2"}}
+  ;  :paths ["scripts"]
+  ;  :exec-fn my.namespace/find-and-print-classes}
+  ;
+  ; :build
+  ; {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6" :git/sha "52cf7d6"}} :ns-default build}
+  ;
+  ;:native-image
+  ;{:main-opts ["-m" "clj.native-image" "core"
+  ;
+  ;             "--initialize-at-build-time"
+  ;             "--initialize-at-run-time=org.apache.http.impl.auth.NTLMEngineImpl"
+  ;             "--initialize-at-run-time=sun.java2d.Disposer"
+  ;             "--initialize-at-run-time=org.apache.poi.util.RandomSingleton"
+  ;             "--initialize-at-run-time=org.apache.poi.ooxml.POIXMLFactory"
+  ;             "--initialize-at-run-time=org.openxmlformats.schemas.presentationml.x2006.main.SldMasterDocument"
+  ;             ; this almost worked until it did not w
+  ;             "--initialize-at-run-time=org.apache.xmlbeans.impl.values.XmlComplexContentImpl"
+  ;             "--initialize-at-run-time=org.docx4j.openpackaging.parts.PresentationML.JaxbPmlPart"
+  ;             "--initialize-at-run-time=org.docx4j.com.google.common.cache.Striped64"
+  ;
+  ;             ;"--trace-object-instantiation=java.security.SecureRandom"
+  ;             ;"--trace-object-instantiation=java.lang.Thread"
+  ;             "--enable-url-protocols=http"
+  ;             "-H:ReflectionConfigurationFiles=wave.json"
+  ;             ; TODO: replace with -Os or -O3 when finished the json file
+  ;             ; https://www.graalvm.org/latest/reference-manual/native-image/optimizations-and-performance/
+  ;             "-Ob"
+  ;             "-o waves"
+  ;             ]
+  ; :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
+  ; :extra-deps
+  ; {clj.native-image/clj.native-image
+  ;  {:git/url "https://github.com/taylorwood/clj.native-image.git"
+  ;   :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}
+  ; }
   }
 
  :deps
- {org.clojure/clojure {:mvn/version "1.11.0"}
+ {org.clojure/clojure      {:mvn/version "1.11.0"}
   ;org.reflections/reflections {:mvn/version "0.10.2"}
-  cljfx/cljfx {:mvn/version "1.9.3"}
+  cljfx/cljfx              {:mvn/version "1.9.3"}
 
-  hellonico/pyjama-fx {
-                          ;:git/url "https://github.com/hellonico/origami-pink.git"
-                          :local/root "../pyjama-fx"
-                          ;:deps/root "pink"
-                          ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
-                          }
-  hellonico/origami-pink {
-                          ;:git/url "https://github.com/hellonico/origami-pink.git"
-                          :local/root "../origami-pink/pink"
-                          ;:deps/root "pink"
-                          ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
-                          }
+  hellonico/pyjama-fx      {
+                            ;:git/url "https://github.com/hellonico/origami-pink.git"
+                            :local/root "../pyjama-fx"
+                            ;:deps/root "pink"
+                            ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
+                            }
+  hellonico/origami-pink   {
+                            ;:git/url "https://github.com/hellonico/origami-pink.git"
+                            :local/root "../origami-pink/pink"
+                            ;:deps/root "pink"
+                            ;:git/sha "7c60f7abb67bd5e2fdfe2ada659acb0336a36da8"
+                            }
 
-  ;org.docx4j/docx4j-core {:mvn/version "11.5.1"}
-  ;org.docx4j/docx4j-JAXB-ReferenceImpl {:mvn/version "11.5.1"}
-  ;org.glassfish.jaxb/jaxb-runtime {:mvn/version "4.0.5"}
-  ;org.docx4j/docx4j {:mvn/version "8.3.7"}
- ;dk.ative/docjure {:mvn/version "1.19.0"}
   org.apache.poi/poi-ooxml {:mvn/version "4.1.2"}
-  ;org.slf4j/slf4j-simple {:mvn/version "2.0.16"}
-  org.slf4j/slf4j-nop {:mvn/version "2.0.16"}
-  ;org.apache.xmlbeans/xmlbeans {:mvn/version "3.1.0"}
-  ;org.apache.commons/commons-collections4 {:mvn/version "4.4"}
-  hellonico/pyjama {:git/url "https://github.com/hellonico/pyjama.git"
-                   :sha "107e03bef3f3543727278695d81f8a973e303cb1"}
-                         }
+  org.slf4j/slf4j-nop      {:mvn/version "2.0.16"}
+  hellonico/pyjama-slides
+  {
+   ;:git/url "https://github.com/hellonico/pyjama.git"
+   ;:sha "107e03bef3f3543727278695d81f8a973e303cb1"
+   :local/root "../pyjama-slides"
+   }}
  }
